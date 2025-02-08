@@ -1,5 +1,5 @@
 {
-    "DatabaseType": "SQLite",
+    "DatabaseType": "None",
     "MySqlHost": "your_mysql_host",
     "MySqlDatabase": "your_mysql_database",
     "MySqlUsername": "your_mysql_username",

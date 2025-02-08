@@ -24,8 +24,12 @@ namespace MatchZy
         public DatabaseType databaseType { get; set; }
 
         public void InitializeDatabase(string directory)
-        {
+        { 
             ConnectDatabase(directory);
+
+            if (databaseType == DatabaseType.None)
+                return;
+
             try
             {
                 connection.Open();
@@ -33,9 +37,12 @@ namespace MatchZy
                 Log($"[InitializeDatabase] {dbType} Database connection successful");
 
                 // Create the `matchzy_stats_matches`, `matchzy_stats_players` and `matchzy_stats_maps` tables if they doesn't exist
-                if (connection is SqliteConnection) {
+                if (connection is SqliteConnection)
+                {
                     CreateRequiredTablesSQLite();
-                } else {
+                }
+                else
+                {
                     CreateRequiredTablesSQL();
                 }
 
@@ -70,7 +77,7 @@ namespace MatchZy
                 {
                     Log($"[InitializeDatabase] Invalid database specified, using SQLite.");
                     connection = new SqliteConnection($"Data Source={Path.Join(directory, "matchzy.db")}");
-                    databaseType = DatabaseType.SQLite;
+                    databaseType = DatabaseType.None;
                 }
             } 
             catch (Exception ex)
@@ -533,7 +540,7 @@ namespace MatchZy
             // Create a default configuration
             DatabaseConfig defaultConfig = new DatabaseConfig
             {
-                DatabaseType = "SQLite",
+                DatabaseType = "None",
                 MySqlHost = "your_mysql_host",
                 MySqlDatabase = "your_mysql_database",
                 MySqlUsername = "your_mysql_username",
@@ -566,15 +573,19 @@ namespace MatchZy
                 // Set the database type
                 if (config != null && config.DatabaseType?.Trim().ToLower() == "mysql") {
                     databaseType = DatabaseType.MySQL;
-                } else {
+                } else if (config != null && config.DatabaseType?.Trim().ToLower() == "sqlite") {
                     databaseType = DatabaseType.SQLite;
+                }
+                else
+                {
+                    databaseType = DatabaseType.None;
                 }
                 
             }
             catch (JsonException ex)
             {
                 Log($"[TryDeserializeConfig - ERROR] Error deserializing database.json: {ex.Message}. Using SQLite DB");
-                databaseType = DatabaseType.SQLite;
+                databaseType = DatabaseType.None;
             }
         }
 
@@ -585,6 +596,7 @@ namespace MatchZy
 
         public enum DatabaseType
         {
+            None,
             SQLite,
             MySQL
         }
