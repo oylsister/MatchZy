@@ -87,6 +87,8 @@ namespace MatchZy
             
             LoadAdmins();
 
+            // create json file here.
+
             database.InitializeDatabase(ModuleDirectory);
 
             // This sets default config ConVars
