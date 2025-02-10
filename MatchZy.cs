@@ -89,7 +89,7 @@ namespace MatchZy
 
             // create json file here.
 
-            database.InitializeDatabase(ModuleDirectory);
+            database.InitializeDatabase(ModuleDirectory).Wait();
 
             // This sets default config ConVars
             Server.ExecuteCommand("execifexists MatchZy/config.cfg");

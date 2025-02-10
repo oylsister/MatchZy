@@ -23,7 +23,7 @@ namespace MatchZy
         DatabaseConfig? config;
         public DatabaseType databaseType { get; set; }
 
-        public void InitializeDatabase(string directory)
+        public async Task InitializeDatabase(string directory)
         { 
             ConnectDatabase(directory);
 
@@ -39,11 +39,11 @@ namespace MatchZy
                 // Create the `matchzy_stats_matches`, `matchzy_stats_players` and `matchzy_stats_maps` tables if they doesn't exist
                 if (connection is SqliteConnection)
                 {
-                    CreateRequiredTablesSQLite();
+                    await CreateRequiredTablesSQLite();
                 }
                 else
                 {
-                    CreateRequiredTablesSQL();
+                    await CreateRequiredTablesSQL();
                 }
 
                 Log("[InitializeDatabase] Table matchzy_stats_matches created (or already exists)");
@@ -87,9 +87,9 @@ namespace MatchZy
 
         }
 
-        public void CreateRequiredTablesSQLite()
+        public async Task CreateRequiredTablesSQLite()
         {
-            connection.Execute($@"
+            await connection.ExecuteAsync($@"
             CREATE TABLE IF NOT EXISTS matchzy_stats_matches (
                 matchid INTEGER PRIMARY KEY AUTOINCREMENT,
                 start_time DATETIME NOT NULL,
@@ -103,7 +103,7 @@ namespace MatchZy
                 server_ip TEXT NOT NULL DEFAULT '0'
             )");
 
-            connection.Execute(@"
+            await connection.ExecuteAsync(@"
                 CREATE TABLE IF NOT EXISTS matchzy_stats_maps (
                     matchid INTEGER NOT NULL,
                     mapnumber INTEGER NOT NULL,
@@ -117,7 +117,7 @@ namespace MatchZy
                     FOREIGN KEY (matchid) REFERENCES matchzy_stats_matches (matchid)
                 )");
 
-            connection.Execute(@"
+            await connection.ExecuteAsync(@"
                 CREATE TABLE IF NOT EXISTS matchzy_stats_players (
                     matchid INTEGER NOT NULL,
                     mapnumber INTEGER NOT NULL,
@@ -161,9 +161,9 @@ namespace MatchZy
                 )");
         }
 
-        public void CreateRequiredTablesSQL()
+        public async Task CreateRequiredTablesSQL()
         {
-            connection.Execute($@"
+            await connection.ExecuteAsync($@"
                 CREATE TABLE IF NOT EXISTS matchzy_stats_matches (
                     matchid INT PRIMARY KEY AUTO_INCREMENT,
                     start_time DATETIME NOT NULL,
@@ -176,8 +176,8 @@ namespace MatchZy
                     team2_score INT NOT NULL DEFAULT 0,
                     server_ip VARCHAR(255) NOT NULL DEFAULT '0'
                 )");
-                
-            connection.Execute($@"
+
+            await connection.ExecuteAsync($@"
             CREATE TABLE IF NOT EXISTS matchzy_stats_maps (
                 matchid INT NOT NULL,
                 mapnumber TINYINT(3) UNSIGNED NOT NULL,
@@ -192,7 +192,7 @@ namespace MatchZy
                 CONSTRAINT matchzy_stats_maps_matchid FOREIGN KEY (matchid) REFERENCES matchzy_stats_matches (matchid)
             )");
 
-            connection.Execute($@"
+            await connection.ExecuteAsync($@"
             CREATE TABLE IF NOT EXISTS matchzy_stats_players (
                 matchid INT NOT NULL,
                 mapnumber TINYINT(3) UNSIGNED NOT NULL,
@@ -236,7 +236,7 @@ namespace MatchZy
             )");
         }
 
-        public long InitMatch(string team1name, string team2name, string serverIp, bool isMatchSetup, long liveMatchId, int mapNumber, string seriesType)
+        public async Task<long> InitMatch(string team1name, string team2name, string serverIp, bool isMatchSetup, long liveMatchId, int mapNumber, string seriesType)
         {
             try
             {
@@ -245,12 +245,12 @@ namespace MatchZy
 
                 if (mapNumber == 0) {
                     if (isMatchSetup && liveMatchId != -1) {
-                        connection.Execute(@"
+                        await connection.ExecuteAsync(@"
                             INSERT INTO matchzy_stats_matches (matchid, start_time, team1_name, team2_name, series_type, server_ip)
                             VALUES (@liveMatchId, " + dateTimeExpression + ", @team1name, @team2name, @seriesType, @serverIp)",
                             new { liveMatchId, team1name, team2name, seriesType, serverIp });
                     } else {
-                        connection.Execute(@"
+                        await connection.ExecuteAsync(@"
                             INSERT INTO matchzy_stats_matches (start_time, team1_name, team2_name, series_type, server_ip)
                             VALUES (" + dateTimeExpression + ", @team1name, @team2name, @seriesType, @serverIp)",
                             new { team1name, team2name, seriesType, serverIp });
@@ -258,7 +258,7 @@ namespace MatchZy
                 }
 
                 if (isMatchSetup && liveMatchId != -1) {
-                    connection.Execute(@"
+                    await connection.ExecuteAsync(@"
                         INSERT INTO matchzy_stats_maps (matchid, start_time, mapnumber, mapname)
                         VALUES (@liveMatchId, " + dateTimeExpression + ", @mapNumber, @mapName)",
                         new { liveMatchId, mapNumber, mapName });
@@ -269,14 +269,14 @@ namespace MatchZy
                 long matchId = -1;
                 if (connection is SqliteConnection)
                 {
-                    matchId = connection.ExecuteScalar<long>("SELECT last_insert_rowid()");
+                    matchId = await connection.ExecuteScalarAsync<long>("SELECT last_insert_rowid()");
                 }
                 else if (connection is MySqlConnection)
                 {
-                    matchId = connection.ExecuteScalar<long>("SELECT LAST_INSERT_ID()");
+                    matchId = await connection.ExecuteScalarAsync<long>("SELECT LAST_INSERT_ID()");
                 }
 
-                connection.Execute(@"
+                await connection.ExecuteAsync(@"
                     INSERT INTO matchzy_stats_maps (matchid, start_time, mapnumber, mapname)
                     VALUES (@matchId, " + dateTimeExpression + ", @mapNumber, @mapName)",
                     new { matchId, mapNumber, mapName });
